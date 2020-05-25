@@ -1,0 +1,8 @@
+开始界面背景图片  background1.png
+选择关卡背景图片  chooselevelscene.png
+选择关卡按钮图片*2 简单+困难
+图标 2.jpg
+返回主菜单按钮图片
+塔的图片 normaltower.png
+困难模式地图背景图片 hardmap.png
+普通怪物图片 enemy.png
