@@ -1,10 +1,11 @@
 #include "towerposition.h"
+#include <QPainter>
 
-const QSize TowerPosition::ms_fixedSize(107, 95);
+const QSize TowerPosition::ms_fixedSize(107,95);
 
-TowerPosition::TowerPosition(QPoint pos, const QPixmap &sprite/* = QPixmap(":/image/towerbase.png")*/)
-    : m_pos(pos)
-    , m_hasTower(false)
+TowerPosition::TowerPosition(QPoint pos, const QPixmap &sprite/* = QPixmap("://images/towerbase.png")*/)
+    : m_hasTower(false)
+    , m_pos(pos)
     , m_sprite(sprite)
 {
 }

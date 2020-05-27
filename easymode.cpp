@@ -1,48 +1,45 @@
 #include "easymode.h"
 #include "ui_easymode.h"
-#include "mainwindow.h"
-#include <towerposition.h>
-#include <iostream>
-#include <waypoint.h>
+#include <mainwindow.h>
+#include "waypoint.h"
+#include "enemy.h"
+#include "bullet.h"
+#include <QPainter>
+#include <QMouseEvent>
+#include <QtGlobal>
+#include <QMessageBox>
 #include <QTimer>
-#include <enemy.h>
-using namespace  std;
+#include <QXmlStreamReader>
+#include <audioplayer.h>
+#include <plistreader.h>
 
+static const int TowerCost = 300;
 
-EasyMode::EasyMode(QWidget *parent) :
-    QDialog(parent),
-    ui(new Ui::EasyMode)
+EasyMode::EasyMode(QWidget *parent)
+    : QDialog(parent)
+    , ui(new Ui::EasyMode)
+    , m_waves(0)
+    , m_playerHp(5)
+    , m_playrGold(1000)
+    , m_gameEnded(false)
+    , m_gameWin(false)
 {
     ui->setupUi(this);
-    this->setFixedSize(1280,768);
-    setWindowIcon(QIcon("://images/2.jpg"));  //设置图标
-    setWindowTitle("简单模式");
-    m_waves=0;
+    setFixedSize(1280,768);
+    preLoadWavesInfo();
     loadTowerPositions();
     addWayPoints();
-    loadWave();
+
+    m_audioPlayer = new AudioPlayer(this);
+    m_audioPlayer->startBGM();
+
+
     QTimer *timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(updateMap()));
     timer->start(10);
 
-}
-
-void EasyMode::paintEvent(QPaintEvent *)
-{    QPainter painter(this);
-     painter.setRenderHint(QPainter::Antialiasing, true);
-      painter.drawPixmap(0,0,1280,768, QPixmap("://images/easymap.jpg"));
-       int i;
-         for(i=0;i<=12;++i)
-         {
-             painter.drawPixmap(m_towerPositionsList[i].zuoshangjiao(),QPixmap("://images/towerbase.png"));
-         }
-          foreach (Tower *tower, m_towersList)
-              tower->draw(&painter);//画塔
-           foreach (WayPoint *waypoint, m_wayPointsList)
-               waypoint->draw(&painter);//画路线
-            foreach (Enemy *enemy, m_enemyList)
-                enemy->draw(&painter);//画敌人
-
+    // 设置300ms后游戏启动
+    QTimer::singleShot(300, this, SLOT(gameStart()));
 }
 
 EasyMode::~EasyMode()
@@ -74,16 +71,53 @@ void EasyMode::loadTowerPositions()
         m_towerPositionsList.push_back(pos[i]);
 }
 
+void EasyMode::paintEvent(QPaintEvent *)
+{
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+     painter.drawPixmap(0,0,1280,768, QPixmap("://images/easymap.jpg"));
+    if (m_gameEnded || m_gameWin)
+    {
+        QString text = m_gameEnded ? "YOU LOST!!!" : "YOU WIN!!!";
+        QPainter painter(this);
+        painter.setPen(QPen(Qt::red));
+        painter.drawText(rect(), Qt::AlignCenter, text);
+        return;
+    }
+
+    foreach (const TowerPosition &towerPos, m_towerPositionsList)
+        towerPos.draw(&painter);
+
+    foreach (const Tower *tower, m_towersList)
+        tower->draw(&painter);
+
+    //foreach (const WayPoint *wayPoint, m_wayPointsList)
+    //    wayPoint->draw(&painter);
+
+    foreach (const Enemy *enemy, m_enemyList)
+        enemy->draw(&painter);
+
+    foreach (const Bullet *bullet, m_bulletList)
+        bullet->draw(&painter);
+
+    drawHP(&painter);
+    drawPlayerGold(&painter);
+
+}
+
 void EasyMode::mousePressEvent(QMouseEvent *event)
 {
     QPoint pressPos = event->pos();
     auto it = m_towerPositionsList.begin();
     while (it != m_towerPositionsList.end())
     {
-        if (CanBuyTower() && it->containPoint(pressPos) && !it->hasTower())
+        if (canBuyTower() && it->containPoint(pressPos) && !it->hasTower())
         {
+            m_audioPlayer->playSound(TowerPlaceSound);
+            m_playrGold -= TowerCost;
             it->setHasTower();
-            Tower *tower = new Tower(it->centerPos());
+
+            Tower *tower = new Tower(it->centerPos(), this);
             m_towersList.push_back(tower);
             update();
             break;
@@ -93,9 +127,50 @@ void EasyMode::mousePressEvent(QMouseEvent *event)
     }
 }
 
-bool EasyMode::CanBuyTower() const
+bool EasyMode::canBuyTower() const
 {
-    return true;
+    if (m_playrGold >= TowerCost)
+        return true;
+    return false;
+}
+
+void EasyMode::drawWave(QPainter *painter)
+{
+    painter->setPen(QPen(Qt::red));
+    painter->drawText(QRect(400, 5, 100, 25), QString("WAVE : %1").arg(m_waves + 1));
+}
+
+void EasyMode::drawHP(QPainter *painter)
+{
+    painter->setPen(QPen(Qt::red));
+    painter->drawText(QRect(30, 5, 100, 25), QString("HP : %1").arg(m_playerHp));
+}
+
+void EasyMode::drawPlayerGold(QPainter *painter)
+{
+    painter->setPen(QPen(Qt::red));
+    painter->drawText(QRect(200, 5, 200, 25), QString("GOLD : %1").arg(m_playrGold));
+}
+
+void EasyMode::doGameOver()
+{
+    if (!m_gameEnded)
+    {
+        m_gameEnded = true;
+        // 此处应该切换场景到结束场景
+        // 暂时以打印替代,见paintEvent处理
+    }
+}
+
+void EasyMode::awardGold(int gold)
+{
+    m_playrGold += gold;
+    update();
+}
+
+AudioPlayer *EasyMode::audioPlayer() const
+{
+    return m_audioPlayer;
 }
 
 
@@ -137,25 +212,27 @@ void EasyMode::addWayPoints()
     wayPoint9->setNextWayPoint(wayPoint8);
 }
 
-void EasyMode::getHpDamage(int Damage/* = 1*/)
-{
 
-    // 暂时空实现，以后这里进行基地费血行为
+void EasyMode::getHpDamage(int damage/* = 1*/)
+{
+    m_audioPlayer->playSound(LifeLoseSound);
+    m_playerHp -= damage;
+    if (m_playerHp <= 0)
+        doGameOver();
 }
 
-void EasyMode::removeEnemy(Enemy *enemy)
+void EasyMode::removedEnemy(Enemy *enemy)
 {
     Q_ASSERT(enemy);
+
     m_enemyList.removeOne(enemy);
     delete enemy;
+
     if (m_enemyList.empty())
     {
-        ++m_waves; // 当前波数加1
-        // 继续读取下一波
+        ++m_waves;
         if (!loadWave())
         {
-            // 当没有下一波时，这里表示游戏胜利
-            // 设置游戏胜利标志为true
             m_gameWin = true;
             // 游戏胜利转到游戏胜利场景
             // 这里暂时以打印处理
@@ -163,24 +240,76 @@ void EasyMode::removeEnemy(Enemy *enemy)
     }
 }
 
-bool EasyMode::loadWave()
+void EasyMode::removedBullet(Bullet *bullet)
 {
-    if (m_waves >= 6)
-        return false;
-    WayPoint *startWayPoint = m_wayPointsList.back(); // 这里是个逆序的，尾部才是其实节点
-    int enemyStartInterval[] = {100,500,600,1000,3000,6000};
-    for (int i = 0; i < 6; ++i)
-    {
-        Enemy *enemy = new Enemy(startWayPoint,this);
-        m_enemyList.push_back(enemy);
-        QTimer::singleShot(enemyStartInterval[i], enemy, SLOT(doActivate()));
-    }
-    return true;
+    Q_ASSERT(bullet);
+
+    m_bulletList.removeOne(bullet);
+    delete bullet;
+}
+
+void EasyMode::addBullet(Bullet *bullet)
+{
+    Q_ASSERT(bullet);
+
+    m_bulletList.push_back(bullet);
 }
 
 void EasyMode::updateMap()
 {
     foreach (Enemy *enemy, m_enemyList)
         enemy->move();
+    foreach (Tower *tower, m_towersList)
+        tower->checkEnemyInRange();
     update();
+}
+
+void EasyMode::preLoadWavesInfo()
+{
+    QFile file(":/config/Waves.plist");
+    if (!file.open(QFile::ReadOnly | QFile::Text))
+    {
+        QMessageBox::warning(this, "TowerDefense", "Cannot Open TowersPosition.plist");
+        return;
+    }
+
+    PListReader reader;
+    reader.read(&file);
+
+    // 获取波数信息
+    m_wavesInfo = reader.data();
+
+    file.close();
+}
+
+bool EasyMode::loadWave()
+{
+    if (m_waves >= m_wavesInfo.size())
+        return false;
+
+    WayPoint *startWayPoint = m_wayPointsList.back();
+    QList<QVariant> curWavesInfo = m_wavesInfo[m_waves].toList();
+
+    for (int i = 0; i < curWavesInfo.size(); ++i)
+    {
+        QMap<QString, QVariant> dict = curWavesInfo[i].toMap();
+        int spawnTime = dict.value("spawnTime").toInt();
+
+        Enemy *enemy = new Enemy(startWayPoint, this);
+        m_enemyList.push_back(enemy);
+        QTimer::singleShot(spawnTime, enemy, SLOT(doActivate()));
+    }
+
+    return true;
+}
+
+
+QList<Enemy *> EasyMode::enemyList() const
+{
+    return m_enemyList;
+}
+
+void EasyMode::gameStart()
+{
+    loadWave();
 }

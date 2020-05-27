@@ -4,6 +4,10 @@
 #include <QDialog>
 #include <QPainter>
 #include <QPaintEvent>
+#include <easymode.h>
+#include <hardmode.h>
+
+class MainWindow;
 
 namespace Ui {
 class chooselevelscene;

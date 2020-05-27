@@ -7,6 +7,7 @@
 #include <QPushButton>
 #include <chooselevelscene.h>
 
+class chooselevelscene;
 
 namespace Ui {
 class MainWindow;

@@ -1,7 +1,10 @@
 #include "waypoint.h"
+#include <QPainter>
+#include <QColor>
+
 WayPoint::WayPoint(QPoint pos)
     : m_pos(pos)
-    , m_nextWayPoint(NULL)
+    , m_nextWayPoint(nullptr)
 {
 }
 
@@ -20,7 +23,7 @@ const QPoint WayPoint::pos() const
     return m_pos;
 }
 
-void WayPoint::draw(QPainter *painter) const
+/*void WayPoint::draw(QPainter *painter) const
 {
     painter->save();
     painter->setPen(QColor(255, 15, 15));
@@ -30,5 +33,4 @@ void WayPoint::draw(QPainter *painter) const
     if (m_nextWayPoint)
         painter->drawLine(m_pos, m_nextWayPoint->m_pos);
     painter->restore();
-}
-
+}*/  //画出路线

@@ -6,3 +6,4 @@
 塔的图片 normaltower.png
 困难模式地图背景图片 hardmap.png
 普通怪物图片 enemy.png
+子弹图片 normalbullet.png

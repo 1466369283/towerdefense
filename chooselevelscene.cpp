@@ -1,8 +1,6 @@
 #include "chooselevelscene.h"
 #include "ui_chooselevelscene.h"
-#include "mainwindow.h"
-#include <easymode.h>
-#include <hardmode.h>
+#include <mainwindow.h>
 
 chooselevelscene::chooselevelscene(QWidget *parent) :
     QDialog(parent),

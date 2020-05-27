@@ -7,5 +7,14 @@
         <file>images/towerbase.png</file>
         <file>images/normaltower.png</file>
         <file>images/enemy.png</file>
+        <file>images/normalbullet.png</file>
+        <file>config/Info.plist</file>
+        <file>config/TowersPosition.plist</file>
+        <file>config/Waves.plist</file>
+        <file>music/8bitDungeonLevel.mp3</file>
+        <file>music/enemy_destroy.wav</file>
+        <file>music/laser_shoot.wav</file>
+        <file>music/life_lose.wav</file>
+        <file>music/tower_place.wav</file>
     </qresource>
 </RCC>

@@ -1,42 +1,48 @@
 #ifndef ENEMY_H
 #define ENEMY_H
-//#pragma once//仅编译一次，解决类的包含引用的编译错误问题
-
 
 #include <QObject>
 #include <QPoint>
 #include <QSize>
 #include <QPixmap>
 
-
 class WayPoint;
 class QPainter;
-class MainWindow;
-class Tower;
 class EasyMode;
+class Tower;
 
-class Enemy:public QObject
+class Enemy : public QObject
 {
-Q_OBJECT
+    Q_OBJECT
 public:
-    Enemy(WayPoint *startWayPoint, EasyMode *game, const  QPixmap &sprite= QPixmap("://images/enemy.png"));
-    static const QSize ms_fixedSize;
-    bool m_active;
-    void draw(QPainter *painter);
+    Enemy(WayPoint *startWayPoint, EasyMode *game, const QPixmap &sprite = QPixmap("://images/enemy.png"));
+    ~Enemy();
+
+    void draw(QPainter *painter) const;
     void move();
+    void getDamage(int damage);
+    void getRemoved();
+    void getAttacked(Tower *attacker);
+    void gotLostSight(Tower *attacker);
+    QPoint pos() const;
 
 public slots:
     void doActivate();
-private:
-    int m_maxHp;
-    int m_currentHp;
-    double m_walkingSpeed;
-    QPoint m_pos;
-    QPixmap m_sprite;
-    WayPoint *m_destinationWayPoint;
-    double m_rotationSprite;
-    EasyMode *m_game;
 
+private:
+    bool			m_active;
+    int				m_maxHp;
+    int				m_currentHp;
+    qreal			m_walkingSpeed;
+    qreal			m_rotationSprite;
+
+    QPoint			m_pos;
+    WayPoint *		m_destinationWayPoint;
+    EasyMode *	    m_game;
+    QList<Tower *>	m_attackedTowersList;
+
+    const QPixmap	m_sprite;
+    static const QSize ms_fixedSize;
 };
 
 #endif // ENEMY_H
