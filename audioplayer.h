@@ -16,7 +16,7 @@ enum SoundType
 class AudioPlayer : public QObject
 {
 public:
-    explicit AudioPlayer(QObject *parent = 0);
+    explicit AudioPlayer(QObject *parent = nullptr);
 
     void startBGM();
     void playSound(SoundType soundType);

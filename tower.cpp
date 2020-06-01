@@ -15,7 +15,7 @@ Tower::Tower(QPoint pos, EasyMode *game, const QPixmap &sprite/* = QPixmap("://i
     : m_attacking(false)
     , m_attackRange(140)
     , m_damage(10)
-    , m_fireRate(100)
+    , m_fireRate(500)
     , m_rotationSprite(0.0)
     , m_chooseEnemy(nullptr)
     , m_game(game)
@@ -66,7 +66,7 @@ void Tower::draw(QPainter *painter) const
     painter->save();
     painter->setPen(Qt::white);
     // 绘制攻击范围
-    painter->drawEllipse(m_pos, m_attackRange, m_attackRange);
+    //painter->drawEllipse(m_pos, m_attackRange, m_attackRange);  画攻击范围
 
     // 绘制偏转坐标,由中心+偏移=左上
     static const QPoint offsetPoint(-ms_fixedSize.width() / 2, -ms_fixedSize.height() / 2);

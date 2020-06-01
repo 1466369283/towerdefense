@@ -136,19 +136,19 @@ bool EasyMode::canBuyTower() const
 
 void EasyMode::drawWave(QPainter *painter)
 {
-    painter->setPen(QPen(Qt::red));
+    painter->setPen(QPen(Qt::white));
     painter->drawText(QRect(400, 5, 100, 25), QString("WAVE : %1").arg(m_waves + 1));
 }
 
 void EasyMode::drawHP(QPainter *painter)
 {
-    painter->setPen(QPen(Qt::red));
+    painter->setPen(QPen(Qt::white));
     painter->drawText(QRect(30, 5, 100, 25), QString("HP : %1").arg(m_playerHp));
 }
 
 void EasyMode::drawPlayerGold(QPainter *painter)
 {
-    painter->setPen(QPen(Qt::red));
+    painter->setPen(QPen(Qt::white));
     painter->drawText(QRect(200, 5, 200, 25), QString("GOLD : %1").arg(m_playrGold));
 }
 
