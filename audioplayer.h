@@ -2,27 +2,43 @@
 #define AUDIOPLAYER_H
 
 #include <QObject>
+#include <QDir>
+
+// 使用绝对路径可以完成声音输出
+static const QString s_curDir = "D:/homework/LiuXi_gogogo/music";
 
 class QMediaPlayer;
+class EasyMode;
 
 enum SoundType
 {
     TowerPlaceSound,		// 放塔时的声音
     LifeLoseSound,			// 基地费血时的声音
-    LaserShootSound,		// 打中敌人时的生意
-    EnemyDestorySound		// 敌人升天时的声音
+    NormalBulletSound,    //敌人被子弹打中的声音
+    IceBulletSound,
+    FireBulletSound,
+    normalEnemyDestorySound,// 敌人下线声音
+    iceEnemyDestorySound,
+    fireEnemyDestorySound,
+    bossEnemyDestorySound,
+    BreakTowerSound,
 };
 
 class AudioPlayer : public QObject
 {
 public:
-    explicit AudioPlayer(QObject *parent = nullptr);
-
+    explicit AudioPlayer(QUrl backgroundMusicUrl,QObject *parent = nullptr);
     void startBGM();
+    void stopBGM();
     void playSound(SoundType soundType);
+    void playWinSound();
+    void playLoseSound();
+    QMediaPlayer * getMusic();
 
 private:
     QMediaPlayer *m_backgroundMusic; // 只用来播放背景音乐
+    QMediaPlayer *m_winMusic;
+    QMediaPlayer *m_loseMusic;
 };
 
 

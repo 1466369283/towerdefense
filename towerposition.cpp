@@ -3,7 +3,7 @@
 
 const QSize TowerPosition::ms_fixedSize(107,95);
 
-TowerPosition::TowerPosition(QPoint pos, const QPixmap &sprite/* = QPixmap("://images/towerbase.png")*/)
+TowerPosition::TowerPosition(QPoint pos, const QPixmap &sprite/* = QPixmap("://images/towerbase1.png")*/)
     : m_hasTower(false)
     , m_pos(pos)
     , m_sprite(sprite)
@@ -36,4 +36,9 @@ void TowerPosition::setHasTower(bool hasTower/* = true*/)
 void TowerPosition::draw(QPainter *painter) const
 {
     painter->drawPixmap(m_pos.x(), m_pos.y(), m_sprite);
+}
+
+void TowerPosition::draw2(QPainter *painter) const
+{
+    painter->drawPixmap(m_pos.x(), m_pos.y(), QPixmap("://images/towerbase2.png"));
 }

@@ -10,6 +10,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = LiuXi_gogogo
 TEMPLATE = app
+RC_ICONS =icon.ico
 
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which has been marked as deprecated (the exact warnings
@@ -28,8 +29,6 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
     chooselevelscene.cpp \
-    easymode.cpp \
-    hardmode.cpp \
     enemy.cpp \
     towerposition.cpp \
     tower.cpp \
@@ -37,13 +36,15 @@ SOURCES += \
     utility.cpp \
     bullet.cpp \
     audioplayer.cpp \
-    plistreader.cpp
+    plistreader.cpp \
+    tcard.cpp \
+    easy.cpp \
+    hard.cpp \
+    easymode.cpp
 
 HEADERS += \
         mainwindow.h \
     chooselevelscene.h \
-    easymode.h \
-    hardmode.h \
     enemy.h \
     towerposition.h \
     tower.h \
@@ -51,13 +52,16 @@ HEADERS += \
     utility.h \
     bullet.h \
     audioplayer.h \
-    plistreader.h
+    plistreader.h \
+    tcard.h \
+    easy.h \
+    hard.h \
+    easymode.h
 
 FORMS += \
         mainwindow.ui \
     chooselevelscene.ui \
-    easymode.ui \
-    hardmode.ui
+    easymode.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -68,7 +72,4 @@ RESOURCES += \
     resource.qrc
 
 DISTFILES += \
-    images/normaltower.png \
-    images/normaltower.png \
-    images/enemy.png \
-    images/enemy.png
+    images/return.png

@@ -16,40 +16,51 @@
   <widget class="QPushButton" name="pushButton">
    <property name="geometry">
     <rect>
-     <x>520</x>
-     <y>430</y>
-     <width>251</width>
-     <height>81</height>
+     <x>540</x>
+     <y>530</y>
+     <width>201</width>
+     <height>101</height>
     </rect>
    </property>
+   <property name="styleSheet">
+    <string notr="true">border-image:url(:/images/chooseEasy.png)
+setStyleSheet(&quot;border:2px groove gray;border-radius:10px;padding:2px 4px;&quot;);</string>
+   </property>
    <property name="text">
-    <string>简单模式</string>
+    <string/>
    </property>
   </widget>
   <widget class="QPushButton" name="pushButton_2">
    <property name="geometry">
     <rect>
-     <x>520</x>
-     <y>570</y>
-     <width>251</width>
-     <height>81</height>
+     <x>540</x>
+     <y>650</y>
+     <width>201</width>
+     <height>101</height>
     </rect>
    </property>
+   <property name="styleSheet">
+    <string notr="true">border-image:url(:/images/chooseHard.png)
+setStyleSheet(&quot;border:2px groove gray;border-radius:10px;padding:2px 4px;&quot;);</string>
+   </property>
    <property name="text">
-    <string>困难模式</string>
+    <string/>
    </property>
   </widget>
   <widget class="QPushButton" name="pushButton_3">
    <property name="geometry">
     <rect>
-     <x>1080</x>
-     <y>620</y>
-     <width>201</width>
-     <height>151</height>
+     <x>1010</x>
+     <y>590</y>
+     <width>271</width>
+     <height>181</height>
     </rect>
    </property>
+   <property name="styleSheet">
+    <string notr="true">border-image:url(:/images/return.png)</string>
+   </property>
    <property name="text">
-    <string>返回主菜单</string>
+    <string/>
    </property>
   </widget>
  </widget>

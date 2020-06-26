@@ -21,6 +21,7 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     void paintEvent(QPaintEvent *);
+    AudioPlayer *		    m_audioPlayer;
 
 private slots:
     void on_pushButton_clicked();

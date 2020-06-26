@@ -2,16 +2,19 @@
 #include <QDir>
 #include <QMediaPlayer>
 #include <QMediaPlaylist>
+#include <easymode.h>
 
-// 为了解决mac下声音无法输出,总之发现使用绝对路径可以完成目标,蛋疼,因此以此种方式暂时处理
-static const QString s_curDir = QDir::currentPath() + "/";
-
-AudioPlayer::AudioPlayer(QObject *parent)
+AudioPlayer::AudioPlayer(QUrl backgroundMusicUrl,QObject *parent)
     : QObject(parent)
     , m_backgroundMusic(nullptr)
+    , m_winMusic(nullptr)
+    , m_loseMusic(nullptr)
 {
     // 创建一直播放的背景音乐
-    QUrl backgroundMusicUrl = QUrl::fromLocalFile(s_curDir + "music/8bitDungeonLevel.mp3");
+    m_winMusic = new QMediaPlayer(this);
+    m_winMusic->setMedia(QUrl::fromLocalFile(s_curDir + "//Win.mp3"));
+    m_loseMusic = new QMediaPlayer(this);
+    m_loseMusic->setMedia(QUrl::fromLocalFile(s_curDir + "//Lose.mp3"));
     if (QFile::exists(backgroundMusicUrl.toLocalFile()))
     {
         m_backgroundMusic = new QMediaPlayer(this);
@@ -32,14 +35,34 @@ void AudioPlayer::startBGM()
         m_backgroundMusic->play();
 }
 
+void AudioPlayer::stopBGM(){
+    m_backgroundMusic->stop();
+}
+
+void AudioPlayer::playWinSound(){
+    if(m_winMusic)
+        m_winMusic->play();
+}
+
+void AudioPlayer::playLoseSound(){
+    if(m_loseMusic)
+        m_loseMusic->play();
+}
+
 void AudioPlayer::playSound(SoundType soundType)
 {
     static const QUrl mediasUrls[] =
     {
-        QUrl::fromLocalFile(s_curDir + "music/tower_place.wav"),
-        QUrl::fromLocalFile(s_curDir + "music/life_lose.wav"),
-        QUrl::fromLocalFile(s_curDir + "music/laser_shoot.wav"),
-        QUrl::fromLocalFile(s_curDir + "music/enemy_destroy.wav")
+        QUrl::fromLocalFile(s_curDir + "//tower_place.mp3"),
+        QUrl::fromLocalFile(s_curDir + "//life_lose.mp3"),
+        QUrl::fromLocalFile(s_curDir + "//normalBullet.mp3"),
+        QUrl::fromLocalFile(s_curDir + "//iceBullet.mp3"),
+        QUrl::fromLocalFile(s_curDir + "//fireBullet.mp3"),
+        QUrl::fromLocalFile(s_curDir + "//normalEnemyDie.mp3"),
+        QUrl::fromLocalFile(s_curDir + "//iceEnemyDie.mp3"),
+        QUrl::fromLocalFile(s_curDir + "//fireEnemyDie.mp3"),
+        QUrl::fromLocalFile(s_curDir + "//bossEnemyDie.mp3"),
+        QUrl::fromLocalFile(s_curDir + "//breakdowntower.mp3"),
     };
     static QMediaPlayer player;
 
@@ -49,3 +72,9 @@ void AudioPlayer::playSound(SoundType soundType)
         player.play();
     }
 }
+
+QMediaPlayer * AudioPlayer::getMusic(){
+    return m_backgroundMusic;
+}
+
+

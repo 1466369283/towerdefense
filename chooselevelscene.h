@@ -5,7 +5,8 @@
 #include <QPainter>
 #include <QPaintEvent>
 #include <easymode.h>
-#include <hardmode.h>
+#include <easy.h>
+#include <hard.h>
 
 class MainWindow;
 
@@ -21,6 +22,7 @@ public:
     explicit chooselevelscene(QWidget *parent = nullptr);
     ~chooselevelscene();
     void paintEvent(QPaintEvent *);
+    AudioPlayer *		    m_audioPlayer;
 
 private slots:
     void on_pushButton_3_clicked();

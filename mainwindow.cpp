@@ -13,9 +13,11 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     setFixedSize(1280,768);
-    setWindowIcon(QIcon("://images/2.jpg"));  //设置图标
-    setWindowTitle("刘希的塔防游戏");
-
+    setWindowIcon(QIcon("://images/icon.jpg"));  //设置图标
+    setWindowTitle("古古怪怪大作战");
+    QUrl backgroundMusicUrl = QUrl::fromLocalFile(s_curDir + "//mainwindow.mp3");
+    m_audioPlayer = new AudioPlayer(backgroundMusicUrl,this);
+    m_audioPlayer->startBGM();
 
 }
 
@@ -28,7 +30,7 @@ void MainWindow::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.drawPixmap(0,0,1280,768, QPixmap("://images/background1.png"));
+    painter.drawPixmap(0,0,1280,768, QPixmap("://images/menu.jpg"));
 
 
 }
@@ -36,6 +38,7 @@ void MainWindow::paintEvent(QPaintEvent *)
 void MainWindow::on_pushButton_clicked()
 {
     chooselevelscene* d=new chooselevelscene();
+    m_audioPlayer->stopBGM();
     this->hide();
     d->show();
 }
