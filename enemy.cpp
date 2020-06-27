@@ -235,7 +235,7 @@ fireEnemy::fireEnemy(WayPoint *startWayPoint, EasyMode *game, const QPixmap &spr
     this->m_walkingSpeed=2.0;
     this->m_maxHp = 150;
     this->m_currentHp = 150;
-    this->antiSlowspeed=1.2;
+    this->antiSlowspeed=1.5;
     this->fireLevel=10;
     this->iceLevel=20;
     this->HPdamage=3;

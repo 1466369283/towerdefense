@@ -40,7 +40,6 @@ protected:
 
     void paintEvent(QPaintEvent *);
     void mousePressEvent(QMouseEvent *);
-    void mouseDoubleClickEvent(QMouseEvent *event);
 
 private:
     QMovie* background = new QMovie("://images/easymap.jpg");

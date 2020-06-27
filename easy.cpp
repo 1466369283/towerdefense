@@ -5,7 +5,7 @@
 #include "easymode.h"
 #include <mainwindow.h>
 
-static const int TowerCost = 300;
+static const int TowerCost = 150;
 
 Easy::Easy(QWidget* parent)
     : EasyMode (parent)
@@ -24,17 +24,15 @@ Easy::Easy(QWidget* parent)
     loadTowerPositions(); //调用位置函数
     addWayPoints();
 
-    //每100ms更新一次灼烧状态
     QTimer *Firetime = new QTimer(this);
     connect(Firetime, SIGNAL(timeout()), this, SLOT(FireIceattack()));
     Firetime->start(100);
 
-    //每30ms发送一个更新信号
     QTimer *timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(updateMap()));
-    timer->start(30);  //30
+    timer->start(30);
     this->uiSetup();
-    // 设置500ms后游戏启动
+
     QTimer::singleShot(500, this, SLOT(gameStart()));
 }
 
@@ -157,7 +155,7 @@ void Easy::uiSetup()
 
     Front1 = new QLabel(this);
     Front1->setStyleSheet("background-color: transparent;font-size:30px;color:green");
-    Front1->setText("100金币");
+    Front1->setText("150金币");
     Front1->setGeometry(586-200-35, 70 , 300, 300);
     Front1->setAlignment(Qt::AlignHCenter); //居中对齐
     Front1->setFont(QFont("等线", 17));
@@ -445,6 +443,7 @@ void Easy::paintEvent(QPaintEvent *)
         QPixmap loseScene("://images/victory.jpg");
         QPainter painter(this);
         painter.drawPixmap(0, 0, loseScene);
+        //audioPlayer()->playWinSound();
 
         }
 
@@ -494,7 +493,7 @@ void Easy::mousePressEvent(QMouseEvent * event)
         {
             //升级
             int level = currenttower->m_level;
-            int gold = 80 + level*100;
+            int gold = level*100;
             if (m_playerGold >= gold)
             {
                 m_playerGold -= gold;
@@ -544,16 +543,16 @@ void Easy::mousePressEvent(QMouseEvent * event)
                 switch (it->m_tower->m_level)
                 {
                 case 1:
-                    Upgrade_MoneyFront->setText("180");
+                    Upgrade_MoneyFront->setText("100");
                     break;
                 case 2:
-                    Upgrade_MoneyFront->setText("280");
+                    Upgrade_MoneyFront->setText("200");
                     break;
                 case 3:
-                    Upgrade_MoneyFront->setText("380");
+                    Upgrade_MoneyFront->setText("300");
                     break;
                 case 4:
-                    Upgrade_MoneyFront->setText("480");
+                    Upgrade_MoneyFront->setText("400");
                     break;
                 default:
                     Upgrade_MoneyFront->setText("---");
@@ -584,7 +583,7 @@ void Easy::mousePressEvent(QMouseEvent * event)
             {
             case 0:tower = new NormalTower(it->centerPos(), this);
                 it->m_tower = tower;
-                m_playerGold -= 100;
+                m_playerGold -= 150;
                 it->m_towerkind = 0;
                 break;
             case 1:tower = new FireTower(it->centerPos(), this);
@@ -629,6 +628,35 @@ void Easy::mousePressEvent(QMouseEvent * event)
         this->currentCard = Cards[cardindex];
         currentIndex = cardindex;
     }
+
+
+
+    if(event->button() == Qt::RightButton)
+      {
+        auto it=m_towerPositionsList.begin();
+        while(it!=m_towerPositionsList.end())
+        {
+            if(it->containPoint(pressPos)&&it->hasTower())
+            {
+                it->setHasTower(false);
+                int i;
+                for(i=0;i<m_towersList.size();i++)
+                {
+                    if(it->containPoint(m_towersList[i]->m_pos))
+                    {
+                        m_towersList[i]->m_fireRateTimer->stop();
+                        m_playerGold+=m_towersList[i]->m_level*100;
+                        m_towersList.erase(m_towersList.begin()+i);
+                        it->setHasTower(false);
+                        audioPlayer()->playSound(BreakTowerSound);
+                    }
+                }
+                update();
+                break;
+            }
+            ++it;
+        }
+       }
 }
 
 void Easy::onTimer()
@@ -656,32 +684,4 @@ void Easy::leave()
      m_audioPlayer->stopBGM();
     this->hide();
     d->show();
-}
-
-void Easy::mouseDoubleClickEvent(QMouseEvent *event)
-{
-    QPoint pressPos=event->pos();
-    auto it=m_towerPositionsList.begin();
-    while(it!=m_towerPositionsList.end())
-    {
-        if(it->containPoint(pressPos)&&it->hasTower())
-        {
-            it->setHasTower(false);
-            int i;
-            for(i=0;i<m_towersList.size();i++)
-            {
-                if(it->containPoint(m_towersList[i]->m_pos))
-                {
-                    m_towersList[i]->m_fireRateTimer->stop();
-                    m_playerGold+=m_towersList[i]->m_level*100;
-                    m_towersList.erase(m_towersList.begin()+i);
-                    it->setHasTower(false);
-                    audioPlayer()->playSound(BreakTowerSound);
-                }
-            }
-            update();
-            break;
-        }
-        ++it;
-    }
 }

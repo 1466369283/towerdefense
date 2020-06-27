@@ -5,7 +5,7 @@
 #include "easymode.h"
 #include <mainwindow.h>
 
-static const int TowerCost = 300;
+static const int TowerCost = 150;
 
 Hard::Hard(QWidget* parent)
     : EasyMode (parent)
@@ -157,7 +157,7 @@ void Hard::uiSetup()
 
     Front1 = new QLabel(this);
     Front1->setStyleSheet("background-color: transparent;font-size:30px;color:green");
-    Front1->setText("100金币");
+    Front1->setText("150金币");
     Front1->setGeometry(586-200-35, 70 , 300, 300);
     Front1->setAlignment(Qt::AlignHCenter); //居中对齐
     Front1->setFont(QFont("等线", 17));
@@ -519,7 +519,7 @@ void Hard::mousePressEvent(QMouseEvent * event)
         {
             //升级
             int level = currenttower->m_level;
-            int gold = 80 + level*100;
+            int gold = level*100;
             if (m_playerGold >= gold)
             {
                 m_playerGold -= gold;
@@ -571,16 +571,16 @@ void Hard::mousePressEvent(QMouseEvent * event)
                 switch (it->m_tower->m_level)
                 {
                 case 1:
-                    Upgrade_MoneyFront->setText("180");
+                    Upgrade_MoneyFront->setText("100");
                     break;
                 case 2:
-                    Upgrade_MoneyFront->setText("280");
+                    Upgrade_MoneyFront->setText("200");
                     break;
                 case 3:
-                    Upgrade_MoneyFront->setText("380");
+                    Upgrade_MoneyFront->setText("300");
                     break;
                 case 4:
-                    Upgrade_MoneyFront->setText("480");
+                    Upgrade_MoneyFront->setText("400");
                     break;
                 default:
                     Upgrade_MoneyFront->setText("---");
@@ -611,7 +611,7 @@ void Hard::mousePressEvent(QMouseEvent * event)
             {
             case 0:tower = new NormalTower(it->centerPos(), this);
                 it->m_tower = tower;
-                m_playerGold -= 100;
+                m_playerGold -= 150;
                 it->m_towerkind = 0;
                 break;
             case 1:tower = new FireTower(it->centerPos(), this);
@@ -656,6 +656,33 @@ void Hard::mousePressEvent(QMouseEvent * event)
         this->currentCard = Cards[cardindex];
         currentIndex = cardindex;
     }
+
+    if(event->button() == Qt::RightButton)
+      {
+        auto it=m_towerPositionsList.begin();
+        while(it!=m_towerPositionsList.end())
+        {
+            if(it->containPoint(pressPos)&&it->hasTower())
+            {
+                it->setHasTower(false);
+                int i;
+                for(i=0;i<m_towersList.size();i++)
+                {
+                    if(it->containPoint(m_towersList[i]->m_pos))
+                    {
+                        m_towersList[i]->m_fireRateTimer->stop();
+                        m_playerGold+=m_towersList[i]->m_level*100;
+                        m_towersList.erase(m_towersList.begin()+i);
+                        it->setHasTower(false);
+                        audioPlayer()->playSound(BreakTowerSound);
+                    }
+                }
+                update();
+                break;
+            }
+            ++it;
+        }
+       }
 }
 
 void Hard::onTimer()
@@ -683,34 +710,5 @@ void Hard::leave()
      m_audioPlayer->stopBGM();
     this->hide();
     d->show();
-
-}
-
-void Hard::mouseDoubleClickEvent(QMouseEvent *event)
-{
-    QPoint pressPos=event->pos();
-    auto it=m_towerPositionsList.begin();
-    while(it!=m_towerPositionsList.end())
-    {
-        if(it->containPoint(pressPos)&&it->hasTower())
-        {
-            it->setHasTower(false);
-            int i;
-            for(i=0;i<m_towersList.size();i++)
-            {
-                if(it->containPoint(m_towersList[i]->m_pos))
-                {
-                    m_towersList[i]->m_fireRateTimer->stop();
-                    m_playerGold+=m_towersList[i]->m_level*100;
-                    m_towersList.erase(m_towersList.begin()+i);
-                    it->setHasTower(false);
-                    audioPlayer()->playSound(BreakTowerSound);
-                }
-            }
-            update();
-            break;
-        }
-        ++it;
-    }
 
 }
