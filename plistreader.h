@@ -7,18 +7,14 @@ class PListReader
 {
 public:
     PListReader();
-
+    QString errorString() const;
     bool read(QIODevice *device);
     const QList<QVariant> data() const;
-
-    QString errorString() const;
-
 private:
     void readPList();
-    void readArray(QList<QVariant> &array);
     void readDict(QList<QVariant> &array);
+    void readArray(QList<QVariant> &array);
     void readKey(QMap<QString, QVariant> &dict);
-
 private:
     QXmlStreamReader	m_xmlReader;
     QList<QVariant>		m_data;

@@ -19,7 +19,6 @@
 #include <QXmlStreamReader>
 #include <QtDebug>
 
-
 #include "bullet.h"
 #include "audioplayer.h"
 #include "towerposition.h"
@@ -35,43 +34,33 @@ public:
     explicit Hard(QWidget* parent = nullptr);
     ~Hard();
     virtual void removedEnemy(Enemy *enemy);
-
 protected:
-
-    void paintEvent(QPaintEvent *);
     void mousePressEvent(QMouseEvent *);
-
+    void paintEvent(QPaintEvent *);
 private:
     QMovie* background = new QMovie("://images/hardmap.jpg");
     QPushButton* exit = new QPushButton(this);
     QMovie* station = new QMovie("//images/towerbase2.png");
-
-    //QPoint cell;
     void uiSetup();
-
-    //增加代码 6-6
 private:
+    bool loadWave();
     void loadTowerPositions();
     void addWayPoints();
-    bool loadWave();
-    bool canBuyTower() const;
+    void preLoadWavesInfo();
     void drawWave();
     void drawHP();
     void drawPlayerGold();
-    //void doGameOver();
-    void preLoadWavesInfo();
     void drawDangao();
-
+    bool canBuyTower() const;
 private:
     QList<QVariant>			m_wavesInfo;
-    QList<TowerPosition>	m_towerPositionsList; //√
+    QList<TowerPosition>	m_towerPositionsList;
     QList<WayPoint *>		m_wayPointsList;
-
 private slots:
-    void onTimer();
-    void updateMap(); //原来的槽
-    void gameStart(); //原来的槽
+    void gameStart();
+    void updateMap();
     void leave();
-
+    void onTimer();
 };
+
 #endif // HARD_H

@@ -16,19 +16,15 @@ class MainWindow;
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
-
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    void paintEvent(QPaintEvent *);
     AudioPlayer *		    m_audioPlayer;
-
+    void paintEvent(QPaintEvent *);
 private slots:
     void on_pushButton_clicked();
-
 private:
     Ui::MainWindow *ui;
-
 };
 
 #endif // MAINWINDOW_H

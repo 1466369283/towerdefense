@@ -11,7 +11,7 @@ Hard::Hard(QWidget* parent)
     : EasyMode (parent)
 {
     this->setFixedSize(1280,768);
-    setWindowIcon(QIcon("://images/icon.jpg"));  //设置图标
+    setWindowIcon(QIcon("://images/icon.jpg"));
     setWindowTitle("困难模式");
     QUrl backgroundMusicUrl = QUrl::fromLocalFile(s_curDir + "//hardmap.mp3");
     m_audioPlayer = new AudioPlayer(backgroundMusicUrl,this);
@@ -19,23 +19,327 @@ Hard::Hard(QWidget* parent)
     this->setMovie(this->background);
     this->background->start();
     this->show();
-
-    preLoadWavesInfo(); //设置波数
-    loadTowerPositions(); //调用位置函数
+    preLoadWavesInfo();
+    loadTowerPositions();
     addWayPoints();
-
-    //每100ms更新一次灼烧状态
     QTimer *Firetime = new QTimer(this);
     connect(Firetime, SIGNAL(timeout()), this, SLOT(FireIceattack()));
     Firetime->start(100);
-
-    //每30ms发送一个更新信号
     QTimer *timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(updateMap()));
-    timer->start(30);  //30
+    timer->start(30);
     this->uiSetup();
-    // 设置500ms后游戏启动
     QTimer::singleShot(500, this, SLOT(gameStart()));
+}
+
+Hard::~Hard()
+{
+    delete this->background;
+    delete this->exit;
+    foreach (tCard *card, Cards)
+    {
+        Q_ASSERT(card);
+        Cards.removeOne(card);
+        delete card;
+    }
+
+    foreach (Tower *tower, m_towersList)
+    {
+        Q_ASSERT(tower);
+        m_towersList.removeOne(tower);
+        delete tower;
+    }
+    foreach (Enemy *enemy, m_enemyList)
+    {
+        Q_ASSERT(enemy);
+        m_enemyList.removeOne(enemy);
+        delete enemy;
+    }
+    foreach (Bullet *bullet, m_bulletList)
+    {
+        removedBullet(bullet);
+    }
+    delete Front1;
+    delete Front2;
+    delete Front3;
+    delete Front4;
+}
+
+void Hard::preLoadWavesInfo()
+{
+    QFile file("://config/HardWaves.plist");
+    if (!file.open(QFile::ReadOnly | QFile::Text))
+    {
+        QMessageBox::warning(this, "TowerDefense", "Cannot Open TowersPosition.plist");
+        return;
+    }
+    PListReader reader;
+    reader.read(&file);
+    m_wavesInfo = reader.data();
+    file.close();
+}
+
+void Hard::loadTowerPositions()
+{
+    QPoint pos[] =
+    {
+        QPoint(199, 264),
+        QPoint(305, 264),
+        QPoint(412, 264),
+        QPoint(950, 279),
+        QPoint(950, 384),
+        QPoint(625, 358),
+        QPoint(733, 359),
+        QPoint(733, 468),
+        QPoint(626, 468),
+        QPoint(518, 468),
+        QPoint(411, 468),
+        QPoint(304, 468),
+        QPoint(198, 468)
+    };
+    int len	= sizeof(pos) / sizeof(pos[0]);
+
+    for (int i = 0; i < len; ++i)
+        m_towerPositionsList.push_back(pos[i]);
+}
+
+void Hard::removedEnemy(Enemy *enemy)
+{
+    Q_ASSERT(enemy);
+    if(enemy!=nullptr)
+    {m_enemyList.removeOne(enemy);
+
+    delete enemy;}
+
+    if (m_enemyList.empty())
+    {
+        ++m_waves;
+        if (!loadWave())
+        {
+        m_gameWin = true;
+        m_audioPlayer->stopBGM();
+        m_audioPlayer->playWinSound();
+        }
+    }
+}
+
+void Hard::addWayPoints()
+{
+    int x=30;
+    WayPoint *wayPoint1 = new WayPoint(QPoint(1108+x, 530));
+    m_wayPointsList.push_back(wayPoint1);
+
+    WayPoint *wayPoint2 = new WayPoint(QPoint(1108+x, 203));
+    m_wayPointsList.push_back(wayPoint2);
+    wayPoint2->setNextWayPoint(wayPoint1);
+
+    WayPoint *wayPoint3 = new WayPoint(QPoint(119+x, 203));
+    m_wayPointsList.push_back(wayPoint3);
+    wayPoint3->setNextWayPoint(wayPoint2);
+
+    WayPoint *wayPoint4 = new WayPoint(QPoint(119+x, 399));
+    m_wayPointsList.push_back(wayPoint4);
+    wayPoint4->setNextWayPoint(wayPoint3);
+
+    WayPoint *wayPoint5 = new WayPoint(QPoint(564+x, 399));
+    m_wayPointsList.push_back(wayPoint5);
+    wayPoint5->setNextWayPoint(wayPoint4);
+
+    WayPoint *wayPoint6 = new WayPoint(QPoint(564+x, 302));
+    m_wayPointsList.push_back(wayPoint6);
+    wayPoint6->setNextWayPoint(wayPoint5);
+
+    WayPoint *wayPoint7 = new WayPoint(QPoint(889+x, 302));
+    m_wayPointsList.push_back(wayPoint7);
+    wayPoint7->setNextWayPoint(wayPoint6);
+
+    WayPoint *wayPoint8 = new WayPoint(QPoint(889+x, 604));
+    m_wayPointsList.push_back(wayPoint8);
+    wayPoint8->setNextWayPoint(wayPoint7);
+
+    WayPoint *wayPoint9 = new WayPoint(QPoint(126+x, 604));
+    m_wayPointsList.push_back(wayPoint9);
+    wayPoint9->setNextWayPoint(wayPoint8);
+
+}
+
+
+bool Hard::canBuyTower() const
+{
+    if (m_playerGold >= TowerCost)
+        return true;
+    return false;
+}
+
+void Hard::drawWave()
+{
+    WaveFront->setText(QString("第%1波敌人").arg(m_waves +1));
+    WaveFront->setAlignment(Qt::AlignHCenter);
+    WaveFront->show();
+    WaveFront->raise();
+}
+
+void Hard::drawPlayerGold()
+{
+    MoneyFront->setText(QString("%1金币").arg(m_playerGold));
+    MoneyFront->setAlignment(Qt::AlignHCenter);
+    MoneyFront->show();
+    MoneyFront->raise();
+}
+
+bool Hard::loadWave()
+{
+    if (m_waves >= m_wavesInfo.size())
+        return false;
+    WayPoint *startWayPoint = m_wayPointsList.back();
+    QList<QVariant> curWavesInfo = m_wavesInfo[m_waves].toList();
+    for (int i = 0; i < curWavesInfo.size(); ++i)
+    {
+        QMap<QString, QVariant> dict = curWavesInfo[i].toMap();
+        int spawnTime = dict.value("spawnTime").toInt();
+
+        Enemy *enemy;
+        int j=i%4;
+        switch(j){
+        case 0:
+            enemy = new normalEnemy(startWayPoint, this);
+            break;
+        case 1:
+            enemy=new iceEnemy(startWayPoint, this);
+            break;
+        case 2:
+            enemy=new fireEnemy(startWayPoint, this);
+            break;
+        case 3:
+            enemy=new bossEnemy(startWayPoint, this);
+            break;
+        }
+        m_enemyList.push_back(enemy);
+        QTimer::singleShot(spawnTime, enemy, SLOT(doActivate()));
+    }
+    return true;
+}
+
+void Hard::drawHP()
+{
+    LifeFront->setText(QString("血量%1").arg(m_playerHp));
+    LifeFront->setAlignment(Qt::AlignHCenter);
+    LifeFront->show();
+    LifeFront->raise();
+}
+
+void Hard::drawDangao()
+{
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.drawPixmap(1065, 475,100, 100, QPixmap("://images/dangao.png"));
+}
+
+void Hard::paintEvent(QPaintEvent *)
+{
+    if (m_gameEnded || m_gameWin)
+    {
+        MoneyFront->hide();
+        MoneyBar->hide();
+        MoneyLabel->hide();
+        LifeFront->hide();
+        LifeBar->hide();
+        LifeLabel->hide();
+        WaveFront->hide();
+        WaveBar->hide();
+        WaveLabel->hide();
+        Base->hide();
+        Front1->hide();
+        Front2->hide();
+        Front3->hide();
+        Front4->hide();
+        LevelUp->hide();
+        LevelFront->hide();
+        LevelBar->hide();
+        Upgrade_MoneyFront->hide();
+        Upgrade_MoneyBar->hide();
+        NormalTowerPic->hide();
+        FireTowerPic->hide();
+        IceTowerPic->hide();
+        foreach (tCard *card, Cards)
+        {
+            Q_ASSERT(card);
+            Cards.removeOne(card);
+            delete card;
+        }
+        foreach (Tower *tower, m_towersList)
+        {
+            Q_ASSERT(tower);
+            m_towersList.removeOne(tower);
+            delete tower;
+        }
+        foreach (Enemy *enemy, m_enemyList)
+        {
+            Q_ASSERT(enemy);
+            m_enemyList.removeOne(enemy);
+            delete enemy;
+        }
+        foreach (Bullet *bullet, m_bulletList)
+        {
+            removedBullet(bullet);
+        }
+        if(m_gameWin){
+        QPixmap loseScene("://images/victory.jpg");
+        QPainter painter(this);
+        painter.drawPixmap(0, 0, loseScene);
+        }
+        if(m_gameEnded)
+        {
+            QPixmap loseScene("://images/lose.jpg");
+            QPainter painter(this);
+            painter.drawPixmap(0, 0, loseScene);
+        }
+        return;
+    }
+
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.drawPixmap(0,0,1280,768, QPixmap("://images/hardmap.jpg"));
+    foreach (const TowerPosition &towerPos, m_towerPositionsList)
+        towerPos.draw2(&painter);
+    foreach (const Tower *tower, m_towersList)
+        tower->draw(&painter);
+    foreach (const Enemy *enemy, m_enemyList)
+        enemy->draw(&painter);
+    foreach (const Bullet *bullet, m_bulletList)
+        bullet->draw(&painter);
+    drawWave();
+    drawHP();
+    drawPlayerGold();
+    drawDangao();
+}
+
+void Hard::updateMap()
+{
+    foreach (Enemy *enemy, m_enemyList)
+        enemy->move();
+    foreach (Tower *tower, m_towersList)
+        tower->checkEnemyInRange();
+    update();
+}
+
+void Hard::leave()
+{
+    MainWindow *d=new MainWindow();
+     m_audioPlayer->stopBGM();
+    this->hide();
+    d->show();
+
+}
+
+void Hard::gameStart()
+{
+    loadWave();
+}
+
+void Hard::onTimer()
+{
+    this->exit->raise();
 }
 
 void Hard::uiSetup()
@@ -120,9 +424,9 @@ void Hard::uiSetup()
     Upgrade_MoneyFront->setStyleSheet("background-color: transparent;font-size:30px;color:yellow");
     Upgrade_MoneyFront->setAlignment(Qt::AlignHCenter);
     Upgrade_MoneyFront->show();
-    Upgrade_MoneyFront->raise();//记得delete！！！
+    Upgrade_MoneyFront->raise();
 
-    exit->setGeometry(1150,20, 100, 100); //设置退出按钮
+    exit->setGeometry(1150,20, 100, 100);
     exit->setFlat(true);
     exit->setIcon(QIcon("://images/leave.png"));
     exit->setIconSize(QSize(100,100));
@@ -159,7 +463,7 @@ void Hard::uiSetup()
     Front1->setStyleSheet("background-color: transparent;font-size:30px;color:green");
     Front1->setText("150金币");
     Front1->setGeometry(586-200-35, 70 , 300, 300);
-    Front1->setAlignment(Qt::AlignHCenter); //居中对齐
+    Front1->setAlignment(Qt::AlignHCenter);
     Front1->setFont(QFont("等线", 17));
     Front1->show();
     Front1->raise();
@@ -194,341 +498,24 @@ void Hard::uiSetup()
 
 }
 
-void Hard::removedEnemy(Enemy *enemy)
-{
-    Q_ASSERT(enemy);
-    if(enemy!=nullptr)
-    {m_enemyList.removeOne(enemy);
-
-    delete enemy;}
-
-    if (m_enemyList.empty())
-    {
-        ++m_waves;
-        if (!loadWave())
-        {
-        m_gameWin = true;
-        m_audioPlayer->stopBGM();
-        m_audioPlayer->playWinSound();
-        // 游戏胜利转到游戏胜利场景
-        // 这里暂时以打印处理
-        }
-    }
-}
-
-
-void Hard::loadTowerPositions()
-{
-    QPoint pos[] =
-    {
-        QPoint(199, 264),
-        QPoint(305, 264),
-        QPoint(412, 264),
-        QPoint(950, 279),
-        QPoint(950, 384),
-        QPoint(625, 358),
-        QPoint(733, 359),
-        QPoint(733, 468),
-        QPoint(626, 468),
-        QPoint(518, 468),
-        QPoint(411, 468),
-        QPoint(304, 468),
-        QPoint(198, 468)
-    };
-    int len	= sizeof(pos) / sizeof(pos[0]);
-
-    for (int i = 0; i < len; ++i)
-        m_towerPositionsList.push_back(pos[i]);
-}
-
-void Hard::addWayPoints()
-{
-    //敌人航点【可改】
-    int x=30;
-    WayPoint *wayPoint1 = new WayPoint(QPoint(1108+x, 530));
-    m_wayPointsList.push_back(wayPoint1);
-
-    WayPoint *wayPoint2 = new WayPoint(QPoint(1108+x, 203));
-    m_wayPointsList.push_back(wayPoint2);
-    wayPoint2->setNextWayPoint(wayPoint1);
-
-    WayPoint *wayPoint3 = new WayPoint(QPoint(119+x, 203));
-    m_wayPointsList.push_back(wayPoint3);
-    wayPoint3->setNextWayPoint(wayPoint2);
-
-    WayPoint *wayPoint4 = new WayPoint(QPoint(119+x, 399));
-    m_wayPointsList.push_back(wayPoint4);
-    wayPoint4->setNextWayPoint(wayPoint3);
-
-    WayPoint *wayPoint5 = new WayPoint(QPoint(564+x, 399));
-    m_wayPointsList.push_back(wayPoint5);
-    wayPoint5->setNextWayPoint(wayPoint4);
-
-    WayPoint *wayPoint6 = new WayPoint(QPoint(564+x, 302));
-    m_wayPointsList.push_back(wayPoint6);
-    wayPoint6->setNextWayPoint(wayPoint5);
-
-    WayPoint *wayPoint7 = new WayPoint(QPoint(889+x, 302));
-    m_wayPointsList.push_back(wayPoint7);
-    wayPoint7->setNextWayPoint(wayPoint6);
-
-    WayPoint *wayPoint8 = new WayPoint(QPoint(889+x, 604));
-    m_wayPointsList.push_back(wayPoint8);
-    wayPoint8->setNextWayPoint(wayPoint7);
-
-    WayPoint *wayPoint9 = new WayPoint(QPoint(126+x, 604));
-    m_wayPointsList.push_back(wayPoint9);
-    wayPoint9->setNextWayPoint(wayPoint8);
-
-}
-
-bool Hard::loadWave()
-{
-    if (m_waves >= m_wavesInfo.size())
-        return false;
-
-    WayPoint *startWayPoint = m_wayPointsList.back();
-    QList<QVariant> curWavesInfo = m_wavesInfo[m_waves].toList();
-
-    for (int i = 0; i < curWavesInfo.size(); ++i)
-    {
-        QMap<QString, QVariant> dict = curWavesInfo[i].toMap();
-        int spawnTime = dict.value("spawnTime").toInt();
-
-        Enemy *enemy;
-        int j=i%4;
-        switch(j){
-        case 0:
-            enemy = new normalEnemy(startWayPoint, this);
-            break;
-        case 1:
-            enemy=new iceEnemy(startWayPoint, this);
-            break;
-        case 2:
-            enemy=new fireEnemy(startWayPoint, this);
-            break;
-        case 3:
-            enemy=new bossEnemy(startWayPoint, this);
-            break;
-        }
-        m_enemyList.push_back(enemy);
-        QTimer::singleShot(spawnTime, enemy, SLOT(doActivate()));
-    }
-
-    return true;
-}
-
-bool Hard::canBuyTower() const
-{
-    if (m_playerGold >= TowerCost)
-        return true;
-    return false;
-}
-
-void Hard::drawWave()
-{
-    WaveFront->setText(QString("第%1波敌人").arg(m_waves +1));
-    WaveFront->setAlignment(Qt::AlignHCenter);
-    WaveFront->show();
-    WaveFront->raise();
-}
-
-void Hard::drawHP()
-{
-    LifeFront->setText(QString("血量%1").arg(m_playerHp));
-    LifeFront->setAlignment(Qt::AlignHCenter);
-    LifeFront->show();
-    LifeFront->raise();
-}
-
-void Hard::drawPlayerGold()
-{
-    MoneyFront->setText(QString("%1金币").arg(m_playerGold));
-    MoneyFront->setAlignment(Qt::AlignHCenter);
-    MoneyFront->show();
-    MoneyFront->raise();
-}
-
-void Hard::drawDangao()
-{
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing, true);
-    painter.drawPixmap(1065, 475,100, 100, QPixmap("://images/dangao.png"));
-}
-
-void Hard::preLoadWavesInfo()
-{
-    QFile file("://config/HardWaves.plist");
-    if (!file.open(QFile::ReadOnly | QFile::Text))
-    {
-        QMessageBox::warning(this, "TowerDefense", "Cannot Open TowersPosition.plist");
-        return;
-    }
-
-    PListReader reader;
-    reader.read(&file);
-
-    // 获取波数信息
-    m_wavesInfo = reader.data();
-
-    file.close();
-}
-
-Hard::~Hard()
-{
-    delete this->background;
-    delete this->exit;
-
-    foreach (tCard *card, Cards)
-    {
-        Q_ASSERT(card);
-        Cards.removeOne(card);
-        delete card;
-    }
-
-    foreach (Tower *tower, m_towersList)
-    {
-        Q_ASSERT(tower);
-        m_towersList.removeOne(tower);
-        delete tower;
-    }
-    foreach (Enemy *enemy, m_enemyList)
-    {
-        Q_ASSERT(enemy);
-        m_enemyList.removeOne(enemy);
-        delete enemy;
-    }
-    foreach (Bullet *bullet, m_bulletList)
-    {
-        removedBullet(bullet);
-    }
-    delete Front1;
-    delete Front2;
-    delete Front3;
-    delete Front4;
-
-    //delete ui;
-}
-
-
-
-void Hard::paintEvent(QPaintEvent *)
-{
-    if (m_gameEnded || m_gameWin)
-    {
-        MoneyFront->hide();
-        MoneyBar->hide();
-        MoneyLabel->hide();
-        LifeFront->hide();
-        LifeBar->hide();
-        LifeLabel->hide();
-        WaveFront->hide();
-        WaveBar->hide();
-        WaveLabel->hide();
-        Base->hide();
-        Front1->hide();
-        Front2->hide();
-        Front3->hide();
-        Front4->hide();
-        LevelUp->hide();
-        LevelFront->hide();
-        LevelBar->hide();
-        Upgrade_MoneyFront->hide();
-        Upgrade_MoneyBar->hide();
-
-        NormalTowerPic->hide();
-        FireTowerPic->hide();
-        IceTowerPic->hide();
-
-        foreach (tCard *card, Cards)
-        {
-            Q_ASSERT(card);
-            Cards.removeOne(card);
-            delete card;
-        }
-
-        foreach (Tower *tower, m_towersList)
-        {
-            Q_ASSERT(tower);
-            m_towersList.removeOne(tower);
-            delete tower;
-        }
-        foreach (Enemy *enemy, m_enemyList)
-        {
-            Q_ASSERT(enemy);
-            m_enemyList.removeOne(enemy);
-            delete enemy;
-        }
-        foreach (Bullet *bullet, m_bulletList)
-        {
-            removedBullet(bullet);
-        }
-
-        if(m_gameWin){
-        QPixmap loseScene("://images/victory.jpg");
-        QPainter painter(this);
-        painter.drawPixmap(0, 0, loseScene);
-
-        }
-
-        if(m_gameEnded)
-        {
-            QPixmap loseScene("://images/lose.jpg");
-            QPainter painter(this);
-            painter.drawPixmap(0, 0, loseScene);
-        }
-        return;
-    }
-
-    QPainter painter(this);
-    painter.setRenderHint(QPainter::Antialiasing, true);
-
-    painter.drawPixmap(0,0,1280,768, QPixmap("://images/hardmap.jpg"));
-    foreach (const TowerPosition &towerPos, m_towerPositionsList)
-        towerPos.draw2(&painter);
-
-    foreach (const Tower *tower, m_towersList)
-        tower->draw(&painter);
-
-    //foreach (const WayPoint *wayPoint, m_wayPointsList)
-    //    wayPoint->draw(&painter);
-
-    foreach (const Enemy *enemy, m_enemyList)
-        enemy->draw(&painter);
-
-    foreach (const Bullet *bullet, m_bulletList)
-        bullet->draw(&painter);
-    drawWave();
-    drawHP();
-    drawPlayerGold();
-    drawDangao();
-
-
-}
-
 void Hard::mousePressEvent(QMouseEvent * event)
 {
-    //单击鼠标后的处理
     QPoint pressPos = event->pos();
     int posx = pressPos.x();
     int posy = pressPos.y();
-
     if (upgradestate)
     {
         if (posx >= 150 && posx <= 150+100 && posy >= 20 && posy <= 20+100 && currenttower->m_level != 5)
         {
-            //升级
             int level = currenttower->m_level;
             int gold = level*100;
             if (m_playerGold >= gold)
             {
                 m_playerGold -= gold;
                 currenttower->levelup();
-
                 LevelFront->setText(QString("level %1").arg(currenttower->m_level));
                 LevelFront->show();
                 LevelFront->raise();
-
                 if (level != 4)
                     Upgrade_MoneyFront->setText(QString("%1").arg(gold+100));
                 else {
@@ -536,35 +523,27 @@ void Hard::mousePressEvent(QMouseEvent * event)
                 }
                 Upgrade_MoneyFront->show();
                 Upgrade_MoneyFront->raise();
-
             }
         }
 
         else {
             currenttower = nullptr;
             upgradestate = 0;
-
             LevelFront->setText("");
             LevelFront->show();
             LevelFront->raise();
-
             Upgrade_MoneyFront->setText("");
             Upgrade_MoneyFront->show();
             Upgrade_MoneyFront->raise();
-
         }
     }
-
-
     if (currentCard == nullptr){
         auto it = m_towerPositionsList.begin();
         while (it != m_towerPositionsList.end())
         {
             if (currentCard == nullptr && it->containPoint(pressPos) && it->hasTower())
             {
-
                 currenttower = it->m_tower;
-                //有塔状态：显示等级和升级图表
                 LevelFront->setText(QString("level %1").arg(it->m_tower->m_level));
                 LevelFront->show();
                 LevelFront->raise();
@@ -588,13 +567,11 @@ void Hard::mousePressEvent(QMouseEvent * event)
                 }
                 Upgrade_MoneyFront->show();
                 Upgrade_MoneyFront->raise();
-
                 upgradestate = 1;
             }
             ++it;
         }
     }
-
     if(currentCard != nullptr){
         bool temp = 0;
     auto it = m_towerPositionsList.begin();
@@ -604,7 +581,6 @@ void Hard::mousePressEvent(QMouseEvent * event)
         {
             temp = 1;
             m_audioPlayer->playSound(TowerPlaceSound);
-
             it->setHasTower();
             Tower *tower;
             switch(currentIndex)
@@ -626,12 +602,11 @@ void Hard::mousePressEvent(QMouseEvent * event)
                 break;
             }
             m_towersList.push_back(tower);
-            update(); //调用paintevent(),重绘画面
+            update();
             currentCard->move(currentPos);
             currentCard = nullptr;
             break;
         }
-
         ++it;
     }
         if(temp == 0)
@@ -640,8 +615,6 @@ void Hard::mousePressEvent(QMouseEvent * event)
            currentCard = nullptr;
         }
     }
-
-    //if(state == 0) //空状态
     int cardindex = -1;
     if (posx >= 586-200 && posx <= 586-200+70 && posy >= 0 && posy <= 0+140)
         cardindex = 0;
@@ -649,14 +622,12 @@ void Hard::mousePressEvent(QMouseEvent * event)
         cardindex = 1;
     else if (posx >= 586+200 && posx <= 586+200+70 && posy >= 0 && posy <= 0+140)
         cardindex = 2;
-
     if (cardindex >= 0)
     {
         currentPos = Cards[cardindex]->pos();
         this->currentCard = Cards[cardindex];
         currentIndex = cardindex;
     }
-
     if(event->button() == Qt::RightButton)
       {
         auto it=m_towerPositionsList.begin();
@@ -683,32 +654,4 @@ void Hard::mousePressEvent(QMouseEvent * event)
             ++it;
         }
        }
-}
-
-void Hard::onTimer()
-{
-    this->exit->raise();
-}
-
-void Hard::updateMap()
-{
-    foreach (Enemy *enemy, m_enemyList)
-        enemy->move();
-    foreach (Tower *tower, m_towersList)
-        tower->checkEnemyInRange();
-    update();
-}
-
-void Hard::gameStart()
-{
-    loadWave();
-}
-
-void Hard::leave()
-{
-    MainWindow *d=new MainWindow();
-     m_audioPlayer->stopBGM();
-    this->hide();
-    d->show();
-
 }

@@ -18,19 +18,15 @@ class Enemy : public QObject
 public:
     Enemy(WayPoint *startWayPoint, EasyMode *game, const QPixmap &sprite = QPixmap("://images/enemy1.png"));
     ~Enemy();
-
-    void draw(QPainter *painter) const;
     void move();
-    void getDamage(Bullet *bullet);
+    void canRemove();
     void getRemoved();
     void getAttacked(Tower *attacker);
-    void getFireDamage(int damage);
+    void getDamage(Bullet *bullet);
     void gotLostSight(Tower *attacker);
-    void canRemove();
+    void getFireDamage(int damage);
+    void draw(QPainter *painter) const;
     QPoint pos() const;
-
-
-
     bool			m_active;
     int				m_maxHp;
     int				m_currentHp;
@@ -45,16 +41,15 @@ public:
     qreal			m_rotationSprite;
     qreal           fireattackLevel;
     qreal           antiSlowspeed;
-    qreal           m_normalSpeed; //正常速度
-    qreal           fireattack; //每0.5秒钟受到多少火焰伤害
-    qreal           m_slowSpeed; //寒冰状态的速度
+    qreal           m_normalSpeed;
+    qreal           fireattack;
+    qreal           m_slowSpeed;
     QPoint			m_pos;
     WayPoint *		m_destinationWayPoint;
     EasyMode *	    m_game;
     QList<Tower *>	m_attackedTowersList;
     const QPixmap	m_sprite;
     static const QSize ms_fixedSize;
-
 public slots:
     void doActivate();
 };

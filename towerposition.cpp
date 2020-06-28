@@ -10,10 +10,14 @@ TowerPosition::TowerPosition(QPoint pos, const QPixmap &sprite/* = QPixmap("://i
 {
 }
 
-const QPoint TowerPosition::centerPos() const
+void TowerPosition::setHasTower(bool hasTower/* = true*/)
 {
-    QPoint offsetPoint(ms_fixedSize.width() / 2, ms_fixedSize.height() / 2);
-    return m_pos + offsetPoint;
+    m_hasTower = hasTower;
+}
+
+bool TowerPosition::hasTower() const
+{
+    return m_hasTower;
 }
 
 bool TowerPosition::containPoint(const QPoint &pos) const
@@ -23,14 +27,10 @@ bool TowerPosition::containPoint(const QPoint &pos) const
     return isXInHere && isYInHere;
 }
 
-bool TowerPosition::hasTower() const
+const QPoint TowerPosition::centerPos() const
 {
-    return m_hasTower;
-}
-
-void TowerPosition::setHasTower(bool hasTower/* = true*/)
-{
-    m_hasTower = hasTower;
+    QPoint offsetPoint(ms_fixedSize.width() / 2, ms_fixedSize.height() / 2);
+    return m_pos + offsetPoint;
 }
 
 void TowerPosition::draw(QPainter *painter) const

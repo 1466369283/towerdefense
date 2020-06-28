@@ -11,13 +11,11 @@ class QPainter;
 class TowerPosition
 {
 public:
-    TowerPosition(QPoint pos, const QPixmap &sprite = QPixmap(":/images/towerbase1.png"));
-
-    void setHasTower(bool hasTower = true);
+    TowerPosition(QPoint pos, const QPixmap &sprite = QPixmap("://images/towerbase1.png"));
     bool hasTower() const;
-    const QPoint centerPos() const;
+    void setHasTower(bool hasTower = true);
     bool containPoint(const QPoint &pos) const;
-
+    const QPoint centerPos() const;
     void draw(QPainter *painter) const;
     void draw2(QPainter *painter) const;
     int         m_towerkind;
@@ -26,8 +24,6 @@ private:
     bool		m_hasTower;
     QPoint		m_pos;
     QPixmap		m_sprite;
-
-
     static const QSize ms_fixedSize;
 };
 

@@ -4,7 +4,21 @@
 #include <QMap>
 
 PListReader::PListReader()
+{}
+
+void PListReader::readDict(QList<QVariant> &array)
 {
+    Q_ASSERT(m_xmlReader.isStartElement() && m_xmlReader.name() == "dict");
+
+    QMap<QString, QVariant> dict;
+    while (m_xmlReader.readNextStartElement())
+    {
+        if (m_xmlReader.name() == "key")
+            readKey(dict);
+        else
+            m_xmlReader.skipCurrentElement();
+    }
+    array.push_back(dict);
 }
 
 bool PListReader::read(QIODevice *device)
@@ -20,34 +34,6 @@ bool PListReader::read(QIODevice *device)
     }
 
     return m_xmlReader.error();
-}
-
-const QList<QVariant> PListReader::data() const
-{
-    return m_data;
-}
-
-QString PListReader::errorString() const
-{
-    return QString("%1\nLine %2, column %3")
-            .arg(m_xmlReader.errorString())
-            .arg(m_xmlReader.lineNumber())
-            .arg(m_xmlReader.columnNumber());
-}
-
-void PListReader::readPList()
-{
-    Q_ASSERT(m_xmlReader.isStartElement() && m_xmlReader.name() == "plist");
-
-    while (m_xmlReader.readNextStartElement())
-    {
-        if (m_xmlReader.name() == "array")
-            readArray(m_data);
-        else if (m_xmlReader.name() == "dict")
-            readDict(m_data);
-        else
-            m_xmlReader.skipCurrentElement();
-    }
 }
 
 void PListReader::readArray(QList<QVariant> &array)
@@ -73,31 +59,39 @@ void PListReader::readArray(QList<QVariant> &array)
     }
 }
 
-void PListReader::readDict(QList<QVariant> &array)
+void PListReader::readPList()
 {
-    Q_ASSERT(m_xmlReader.isStartElement() && m_xmlReader.name() == "dict");
+    Q_ASSERT(m_xmlReader.isStartElement() && m_xmlReader.name() == "plist");
 
-    QMap<QString, QVariant> dict;
     while (m_xmlReader.readNextStartElement())
     {
-        // 这里只处理key,在readKey中,一次默认读取一对键值
-        if (m_xmlReader.name() == "key")
-            readKey(dict);
+        if (m_xmlReader.name() == "array")
+            readArray(m_data);
+        else if (m_xmlReader.name() == "dict")
+            readDict(m_data);
         else
             m_xmlReader.skipCurrentElement();
     }
-
-    array.push_back(dict);
 }
 
 void PListReader::readKey(QMap<QString, QVariant> &dict)
 {
     Q_ASSERT(m_xmlReader.isStartElement() && m_xmlReader.name() == "key");
-
-    // 这里一次读取一个键值对
     QString key = m_xmlReader.readElementText();
     Q_ASSERT(m_xmlReader.readNextStartElement());
     QString value = m_xmlReader.readElementText();
-
     dict.insertMulti(key, value);
+}
+
+const QList<QVariant> PListReader::data() const
+{
+    return m_data;
+}
+
+QString PListReader::errorString() const
+{
+    return QString("%1\nLine %2, column %3")
+            .arg(m_xmlReader.errorString())
+            .arg(m_xmlReader.lineNumber())
+            .arg(m_xmlReader.columnNumber());
 }

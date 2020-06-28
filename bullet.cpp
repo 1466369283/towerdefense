@@ -20,33 +20,25 @@ Bullet::Bullet(QPoint startPos, QPoint targetPoint, int damage, Enemy *target,
     , slow_speed(slow)
 {}
 
-void Bullet::draw(QPainter *painter) const
-{
-    painter->drawPixmap(m_currentPos, m_sprite);
-}
-
 void Bullet::move()
 {
-    // 100毫秒内击中敌人
     static const int duration = 100;
     QPropertyAnimation *animation = new QPropertyAnimation(this, "m_currentPos");
     animation->setDuration(duration);
     animation->setStartValue(m_startPos);
     animation->setEndValue(m_targetPos);
     connect(animation, SIGNAL(finished()), this, SLOT(hitTarget()));
-
     animation->start();
 }
 
-void Bullet::hitTarget()
+void Bullet::draw(QPainter *painter) const
 {
-    // 这样处理的原因是:
-    // 可能多个炮弹击中敌人,而其中一个将其消灭,导致敌人delete
-    // 后续炮弹再攻击到的敌人就是无效内存区域
-    // 因此先判断下敌人是否还有效
-    if (m_game->enemyList().indexOf(m_target) != -1)
-        m_target->getDamage(this);
-    m_game->removedBullet(this);
+    painter->drawPixmap(m_currentPos, m_sprite);
+}
+
+QPoint Bullet::currentPos() const
+{
+    return m_currentPos;
 }
 
 void Bullet::setCurrentPos(QPoint pos)
@@ -54,9 +46,11 @@ void Bullet::setCurrentPos(QPoint pos)
     m_currentPos = pos;
 }
 
-QPoint Bullet::currentPos() const
+void Bullet::hitTarget()
 {
-    return m_currentPos;
+    if (m_game->enemyList().indexOf(m_target) != -1)
+        m_target->getDamage(this);
+    m_game->removedBullet(this);
 }
 
 NormalBullet::NormalBullet(QPoint startPos, QPoint targetPoint, int damage, Enemy *target,EasyMode *game, const QPixmap &sprite)

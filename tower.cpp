@@ -27,30 +27,26 @@ Tower::Tower(QPoint pos, EasyMode *game, const QPixmap &sprite, int attackRange,
     connect(m_fireRateTimer, SIGNAL(timeout()), this, SLOT(shootWeapon()));
 }
 
-
-Tower::~Tower()
+void Tower::draw(QPainter *painter) const
 {
-    delete m_fireRateTimer;
-    m_fireRateTimer = nullptr;
+    painter->save();
+    painter->setPen(Qt::white);
+    static const QPoint offsetPoint(-ms_fixedSize.width() / 2, -ms_fixedSize.height() / 2);
+    painter->translate(m_pos);
+    painter->rotate(m_rotationSprite);
+    painter->drawPixmap(offsetPoint.x()+20,offsetPoint.y()-50 ,70,140,m_sprite);
+    painter->restore();
 }
 
 void Tower::checkEnemyInRange()
 {
     if (m_chooseEnemy)
     {
-        // 这种情况下,需要旋转炮台对准敌人
-        // 向量标准化
-      //  QVector2D normalized(m_chooseEnemy->pos() - m_pos);
-       // normalized.normalize();
-      //  m_rotationSprite = qRadiansToDegrees(qAtan2(normalized.y(), normalized.x()))+90;
-
-        // 如果敌人脱离攻击范围
         if (!collisionWithCircle(m_pos, m_attackRange, m_chooseEnemy->pos(), 1))
             lostSightOfEnemy();
     }
     else
     {
-        // 遍历敌人,看是否有敌人在攻击范围内
         QList<Enemy *> enemyList = m_game->enemyList();
         foreach (Enemy *enemy, enemyList)
         {
@@ -63,28 +59,6 @@ void Tower::checkEnemyInRange()
     }
 }
 
-void Tower::draw(QPainter *painter) const
-{
-    painter->save();
-    painter->setPen(Qt::white);
-    // 绘制攻击范围
-    //painter->drawEllipse(m_pos, m_attackRange, m_attackRange);  //画攻击范围
-
-    // 绘制偏转坐标,由中心+偏移=左上
-    static const QPoint offsetPoint(-ms_fixedSize.width() / 2, -ms_fixedSize.height() / 2);
-    // 绘制炮塔并选择炮塔
-    painter->translate(m_pos);
-    painter->rotate(m_rotationSprite);
-    painter->drawPixmap(offsetPoint.x()+20,offsetPoint.y()-50 ,70,140,m_sprite);
-    //painter->drawPixmap(offsetPoint.x(),offsetPoint.y() -30,107,95+30,m_sprite);
-    painter->restore();
-}
-
-void Tower::attackEnemy()
-{
-    m_fireRateTimer->start(m_fireRate);
-}
-
 void Tower::chooseEnemyForAttack(Enemy *enemy)
 {
     Q_ASSERT(enemy);
@@ -93,14 +67,9 @@ void Tower::chooseEnemyForAttack(Enemy *enemy)
     m_chooseEnemy->getAttacked(this);
 }
 
-void Tower::targetKilled()
+void Tower::attackEnemy()
 {
-    if (m_chooseEnemy)
-        m_chooseEnemy = nullptr;
-
-    //停止计时器
-    m_fireRateTimer->stop();
-    m_rotationSprite = 0.0;
+    m_fireRateTimer->start(m_fireRate);
 }
 
 void Tower::lostSightOfEnemy()
@@ -108,11 +77,17 @@ void Tower::lostSightOfEnemy()
     m_chooseEnemy->gotLostSight(this);
     if (m_chooseEnemy)
         m_chooseEnemy = nullptr;
-
     m_fireRateTimer->stop();
     m_rotationSprite = 0.0;
 }
 
+void Tower::targetKilled()
+{
+    if (m_chooseEnemy)
+        m_chooseEnemy = nullptr;
+    m_fireRateTimer->stop();
+    m_rotationSprite = 0.0;
+}
 
 NormalTower::NormalTower(QPoint pos, EasyMode *game, const QPixmap &sprite)
     : Tower(pos, game, sprite)
@@ -134,10 +109,37 @@ void NormalTower::shootWeapon()
 
 void NormalTower::levelup()
 {
-    if (m_level == 5) //5级为最高级
+    if (m_level == 5)
         return;
     m_level++;
-    m_damage += 5; //每升一级子弹加5点伤害
+    m_damage += 5;
+}
+
+IceTower::IceTower(QPoint pos, EasyMode *game, const QPixmap &sprite)
+    : Tower(pos, game, sprite)
+{
+
+}
+
+IceTower::~IceTower()
+{
+
+}
+
+void IceTower::levelup()
+{
+    if (m_level == 5)
+        return;
+    m_level++;
+    m_damage += 5;
+    slowspeed -= 0.1;
+}
+
+void IceTower::shootWeapon()
+{
+    Bullet *bullet = new IceBullet(m_pos, m_chooseEnemy->pos(), m_damage, m_chooseEnemy, m_game, 2, 0.5);
+    bullet->move();
+    m_game->addBullet(bullet);
 }
 
 FireTower::FireTower(QPoint pos, EasyMode *game, const QPixmap &sprite)
@@ -160,38 +162,16 @@ void FireTower::shootWeapon()
 
 void FireTower::levelup()
 {
-    if (m_level == 5) //5级为最高级
+    if (m_level == 5)
         return;
     m_level++;
-    m_damage += 5; //每升一级，火焰子弹加5点伤害
-    fireattack += 1; //每升一级，火焰子弹加1点灼烧伤害
+    m_damage += 5;
+    fireattack += 1;
 }
 
-IceTower::IceTower(QPoint pos, EasyMode *game, const QPixmap &sprite)
-    : Tower(pos, game, sprite)
+Tower::~Tower()
 {
-
+    delete m_fireRateTimer;
+    m_fireRateTimer = nullptr;
 }
-
-IceTower::~IceTower()
-{
-
-}
-
-void IceTower::levelup()
-{
-    if (m_level == 5) //5级为最高级
-        return;
-    m_level++;
-    m_damage += 5; //每升一级，寒冰子弹加5点伤害
-    slowspeed -= 0.1; //每升一级，寒冰子弹增加10%减速效果
-}
-
-void IceTower::shootWeapon()
-{
-    Bullet *bullet = new IceBullet(m_pos, m_chooseEnemy->pos(), m_damage, m_chooseEnemy, m_game, 2, 0.5);
-    bullet->move();
-    m_game->addBullet(bullet);
-}
-
 

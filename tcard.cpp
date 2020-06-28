@@ -17,7 +17,6 @@ tNormalTowerCard::tNormalTowerCard(QLabel *parent):tCard(parent)
 {
     this->setMovie(anim);
     anim->start();
-
 }
 
 tNormalTowerCard::~tNormalTowerCard()

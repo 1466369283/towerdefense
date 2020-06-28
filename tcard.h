@@ -6,13 +6,9 @@
 #include <QSound>
 #include <QMouseEvent>
 
-
-class Easy;
 class EasyMode;
+class Easy;
 class Hard;
-
-class EasyMode;
-class Easy;
 
 class tCard : public QLabel
 {
@@ -29,7 +25,6 @@ public:
 private:
     QMovie* anim = new QMovie("://images/tower1xiao.png");
 };
-
 
 class tFireTowerCard : public tCard
 {
@@ -48,6 +43,5 @@ public:
 private:
     QMovie* anim = new QMovie("://images/tower3xiao.png");
 };
-
 
 #endif // TCARD_H
